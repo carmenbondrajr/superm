@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(dotnet build)",
+      "Bash(cp:*)",
+      "Bash(chmod:*)",
+      "Bash(./build.sh)",
+      "Bash(rm:*)",
+      "Bash(ls:*)",
+      "Bash(dotnet build:*)",
+      "Bash(mv:*)"
+    ],
+    "deny": []
+  }
+}

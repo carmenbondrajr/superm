@@ -1,0 +1,29 @@
+# Build artifacts
+bin/
+obj/
+build-output/
+
+# IDE files
+*.user
+*.suo
+.vs/
+.vscode/
+
+# NuGet
+packages/
+
+# Logs
+*.log
+
+# Game and BepInEx dependencies (user must copy these)
+libs/
+
+# Build outputs
+*.dll
+*.pdb
+*.cache
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
