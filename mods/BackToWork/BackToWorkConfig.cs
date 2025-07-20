@@ -27,7 +27,7 @@ namespace SupermarketSimulatorMods.BackToWork
             EnableModConfig = config.Bind("Settings", 
                 "EnableMod", 
                 true, 
-                new ConfigDescription("Enable the Back to Work mod functionality. When enabled, restockers will drop boxes and continue working instead of waiting when storage racks are full.",
+                new ConfigDescription("Enable the Back to Work mod functionality. When enabled, restockers will go to the waiting area, drop boxes there, and return to productive work instead of sitting idle when storage racks are full.",
                     null,
                     new ConfigurationManagerAttributes { Order = 100 }));
                 
@@ -35,7 +35,7 @@ namespace SupermarketSimulatorMods.BackToWork
             VerboseLoggingConfig = config.Bind("Settings",
                 "VerboseLogging",
                 false,
-                new ConfigDescription("Enable detailed logging of restocker behavior modifications (useful for debugging)",
+                new ConfigDescription("Enable detailed logging of restocker productivity enhancements (useful for debugging)",
                     null,
                     new ConfigurationManagerAttributes { Order = 90, IsAdvanced = true }));
             

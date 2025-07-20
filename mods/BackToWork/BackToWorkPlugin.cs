@@ -4,14 +4,15 @@ using BepInEx.Logging;
 namespace SupermarketSimulatorMods.BackToWork
 {
     /// <summary>
-    /// Back to Work - A Supermarket Simulator mod that fixes restocker box holding issues.
+    /// Back to Work - A Supermarket Simulator mod that enhances restocker productivity.
     /// 
     /// Features:
-    /// - Prevents restockers from getting stuck holding boxes when storage racks are full
-    /// - Makes restockers drop boxes to ground and continue other tasks instead of waiting
+    /// - Improves restocker workflow when storage racks are full
+    /// - Makes restockers drop boxes in waiting areas and return to productive work
+    /// - Reduces need for manual micromanagement of storage space
     /// - Configurable enable/disable functionality
     /// - Optional verbose logging for debugging
-    /// - Improves overall store efficiency by keeping restockers productive
+    /// - Enhances overall store efficiency by keeping staff busy
     /// 
     /// Technical Details:
     /// - Uses Harmony patching to intercept Restocker.GoToWaiting() method

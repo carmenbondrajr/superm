@@ -6,34 +6,34 @@ using UnityEngine;
 namespace SupermarketSimulatorMods.BackToWork
 {
     /// <summary>
-    /// Harmony patch to intercept and modify restocker waiting behavior when storage racks are full.
-    /// This is the main patch that enables the "drop box and continue working" functionality.
+    /// Harmony patch to enhance restocker productivity when storage racks are full.
+    /// This allows restockers to go to the waiting area, drop boxes, and return to productive work.
     /// </summary>
     [HarmonyPatch(typeof(Restocker), "GoToWaiting")]
     public class RestockerGoToWaitingPatch
     {
         /// <summary>
-        /// Intercepts the GoToWaiting method when restockers are about to wait for available rack slots.
-        /// Instead of waiting with a box, drops the box to ground and resumes other restocking tasks.
+        /// Executes after the restocker has gone to the waiting area.
+        /// If they're waiting for rack space while carrying a box, drops the box and returns to productive work.
         /// </summary>
         /// <param name="__instance">The restocker instance</param>
-        /// <param name="state">The waiting state being entered</param>
-        /// <returns>False to skip original method when box is dropped, true to continue original behavior</returns>
-        static bool Prefix(Restocker __instance, RestockerState state)
+        /// <param name="state">The waiting state that was entered</param>
+        /// <param name="__result">The coroutine returned by the original method</param>
+        static void Postfix(Restocker __instance, RestockerState state, ref IEnumerator __result)
         {
             if (state != RestockerState.WAITING_FOR_AVAILABLE_RACK_SLOT)
             {
-                return true;
+                return;
             }
 
             if (!BackToWorkConfig.EnableMod)
             {
-                return true;
+                return;
             }
 
             if (!__instance.CarryingBox)
             {
-                return true;
+                return;
             }
 
             var boxField = AccessTools.Field(typeof(Restocker), "m_Box");
@@ -41,14 +41,32 @@ namespace SupermarketSimulatorMods.BackToWork
             
             if (box == null)
             {
-                return true;
+                return;
             }
 
+            // Replace the original coroutine with our custom one that drops the box after reaching waiting area
+            __result = GoToWaitingAndDropBox(__instance, state, __result);
+        }
+
+        /// <summary>
+        /// Custom coroutine that executes the original waiting behavior, then drops the box and returns to productive work.
+        /// </summary>
+        /// <param name="restocker">The restocker instance</param>
+        /// <param name="state">The waiting state</param>
+        /// <param name="originalCoroutine">The original GoToWaiting coroutine</param>
+        /// <returns>Modified coroutine that drops box after reaching waiting area</returns>
+        static IEnumerator GoToWaitingAndDropBox(Restocker restocker, RestockerState state, IEnumerator originalCoroutine)
+        {
             if (BackToWorkConfig.VerboseLogging)
             {
-                BackToWorkPlugin.Logger.LogInfo($"Restocker carrying box but no rack space available. Dropping box and continuing work.");
+                BackToWorkPlugin.Logger.LogInfo($"Restocker carrying box but no rack space available. Going to waiting area to drop box and get back to work.");
             }
 
+            // Execute the original waiting behavior (go to waiting area)
+            yield return restocker.StartCoroutine(originalCoroutine);
+
+            // Now that we're in the waiting area, drop the box and resume tasks
+            bool success = false;
             try
             {
                 // Use reflection to safely access private methods and fields
@@ -56,44 +74,46 @@ namespace SupermarketSimulatorMods.BackToWork
                 if (dropBoxMethod == null)
                 {
                     BackToWorkPlugin.Logger.LogError("Could not find DropBoxToGround method");
-                    return true;
+                    yield break;
                 }
-                dropBoxMethod.Invoke(__instance, null);
+                dropBoxMethod.Invoke(restocker, null);
                 
                 var stateField = AccessTools.Field(typeof(Restocker), "m_State");
                 if (stateField != null)
                 {
-                    stateField.SetValue(__instance, RestockerState.IDLE);
+                    stateField.SetValue(restocker, RestockerState.IDLE);
                 }
                 
                 var checkTasksField = AccessTools.Field(typeof(Restocker), "m_CheckTasks");
                 if (checkTasksField != null)
                 {
-                    checkTasksField.SetValue(__instance, true);
+                    checkTasksField.SetValue(restocker, true);
                 }
                 
-                var tryRestockingMethod = AccessTools.Method(typeof(Restocker), "TryRestocking");
-                if (tryRestockingMethod != null)
-                {
-                    var coroutine = tryRestockingMethod.Invoke(__instance, null) as IEnumerator;
-                    if (coroutine != null)
-                    {
-                        __instance.StartCoroutine(coroutine);
-                    }
-                }
-                
-                if (BackToWorkConfig.VerboseLogging)
-                {
-                    BackToWorkPlugin.Logger.LogInfo("Successfully dropped box and resumed restocking tasks.");
-                }
-                
-                return false;
+                success = true;
             }
             catch (System.Exception ex)
             {
-                BackToWorkPlugin.Logger.LogError($"Error in RestockerGoToWaitingPatch: {ex.Message}");
+                BackToWorkPlugin.Logger.LogError($"Error in GoToWaitingAndDropBox: {ex.Message}");
                 BackToWorkPlugin.Logger.LogError($"Stack trace: {ex.StackTrace}");
-                return true;
+            }
+
+            if (success)
+            {
+                var tryRestockingMethod = AccessTools.Method(typeof(Restocker), "TryRestocking");
+                if (tryRestockingMethod != null)
+                {
+                    var coroutine = tryRestockingMethod.Invoke(restocker, null) as IEnumerator;
+                    if (coroutine != null)
+                    {
+                        yield return restocker.StartCoroutine(coroutine);
+                    }
+                    
+                    if (BackToWorkConfig.VerboseLogging)
+                    {
+                        BackToWorkPlugin.Logger.LogInfo("Successfully dropped box in waiting area and returned to productive work.");
+                    }
+                }
             }
         }
     }

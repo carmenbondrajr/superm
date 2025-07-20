@@ -8,9 +8,18 @@ A comprehensive modding framework for creating BepInEx mods for Supermarket Simu
 **Control staff wages in Supermarket Simulator**
 
 - **Global wage multiplier**: Reduce all staff costs by any percentage
-- **Individual wage control**: Set custom wages per employee type (Cashiers, Restockers, etc.)
 - **Real-time configuration**: Modify settings without restarting the game
+- **Configuration Manager support**: In-game settings with F1 menu
 - **Detailed logging**: See exactly what wage changes are being applied
+
+### 🔄 BackToWork
+**Improve restocker efficiency and productivity**
+
+- **Smart workflow**: Restockers drop boxes in waiting areas and get back to work instead of sitting idle
+- **Enhanced productivity**: Keeps staff busy with other tasks when storage racks are full
+- **Reduced micromanagement**: Less need to manually free up storage space for waiting workers
+- **Configurable behavior**: Enable/disable functionality as needed
+- **Verbose logging**: Optional detailed logging for debugging
 
 ---
 
@@ -38,18 +47,22 @@ You need to copy 5 DLL files from your Supermarket Simulator installation to the
 ./build.sh
 ```
 
-### 3️⃣ **Install Mod**
-Copy **just the single** `MinimumWage.dll` from `build-output/netstandard2.1/` to your game's `BepInEx/plugins/` folder:
+### 3️⃣ **Install Mods**
+Copy the mod DLLs from `build-output/netstandard2.1/` to your game's `BepInEx/plugins/` folder:
 
 ```bash
 # Example path (adjust for your installation)
-cp build-output/netstandard2.1/MinimumWage.dll ~/Library/Application\ Support/Steam/steamapps/common/Supermarket\ Simulator/Contents/Resources/Data/../BepInEx/plugins/
+cp build-output/netstandard2.1/*.dll ~/Library/Application\ Support/Steam/steamapps/common/Supermarket\ Simulator/Contents/Resources/Data/../BepInEx/plugins/
 ```
 
-> **✅ Single DLL** - No additional dependencies needed!
+**Available mods:**
+- `MinimumWage.dll` - Staff wage control
+- `BackToWork.dll` - Restocker productivity enhancement
+
+> **✅ Single DLLs** - No additional dependencies needed! Install just the mods you want.
 
 ### 4️⃣ **Launch Game**
-Start Supermarket Simulator. The mod will create a config file on first run.
+Start Supermarket Simulator. Each mod will create its own config file on first run.
 
 ### 5️⃣ **Optional: Install Configuration Manager (Recommended)**
 For an in-game configuration GUI, install [BepInEx Configuration Manager](https://github.com/BepInEx/BepInEx.ConfigurationManager):
@@ -64,28 +77,14 @@ For an in-game configuration GUI, install [BepInEx Configuration Manager](https:
 
 ## ⚙️ Configuration
 
+### MinimumWage Configuration
 After first launch, edit your configuration at:
 `BepInEx/config/com.supermarketsim.minimumwage.cfg`
 
-### **Basic Setup (Recommended)**
 ```ini
-[General]
+[Settings]
 WageMultiplier = 0.5              # 50% staff wage reduction
-EnableIndividualWageControl = false
-```
-
-### **Advanced Setup (Per-Employee Control)**
-```ini
-[General]
-WageMultiplier = 1.0              # Ignored when individual control is enabled
-EnableIndividualWageControl = true
-
-[Individual Wages]
-RestockerWage = 25.0              # Daily wage for restockers
-CashierWage = 30.0                # Daily wage for cashiers
-CustomerHelperWage = 20.0         # Daily wage for customer helpers
-SecurityGuardWage = 35.0          # Daily wage for security guards
-JanitorWage = 20.0                # Daily wage for janitors
+EnableLogging = false             # Enable detailed logging for debugging
 ```
 
 ### **Common Configurations**
@@ -94,12 +93,24 @@ JanitorWage = 20.0                # Daily wage for janitors
 - **25% reduction**: `WageMultiplier = 0.75`
 - **Double costs**: `WageMultiplier = 2.0`
 
+### BackToWork Configuration
+After first launch, edit your configuration at:
+`BepInEx/config/com.supermarketsim.backtowork.cfg`
+
+```ini
+[Settings]
+EnableMod = true                      # Enable/disable the mod
+VerboseLogging = false                # Enable detailed logging for debugging
+```
+
+**Behavior**: When enabled, restockers will go to waiting areas, drop their boxes, and return to productive work instead of sitting idle when storage racks are full.
+
 ### **Configuration Manager Features (If Installed)**
 When using Configuration Manager (F1 in-game), you'll get:
 - **Sliders** for all numeric values with appropriate ranges
 - **Hover descriptions** explaining each setting
 - **Real-time changes** - no need to restart the game
-- **Organized sections** - "General" and "Individual Wages"
+- **Organized sections** for each mod's settings
 - **Proper ordering** - most important settings at the top
 
 ---
@@ -108,16 +119,23 @@ When using Configuration Manager (F1 in-game), you'll get:
 
 ```
 ├── 📁 mods/                            # Individual mod projects
-│   └── 📁 MinimumWage/                 # Staff wage control mod
-│       ├── MinimumWagePlugin.cs        # Main plugin entry point
-│       ├── EmployeeCostPatch.cs        # Harmony patches for wage control
-│       ├── StaffWageConfig.cs          # Configuration management
+│   ├── 📁 MinimumWage/                 # Staff wage control mod
+│   │   ├── MinimumWagePlugin.cs        # Main plugin entry point
+│   │   ├── EmployeeCostPatch.cs        # Harmony patches for wage control
+│   │   ├── StaffWageConfig.cs          # Configuration management
+│   │   ├── ModBase.cs                  # Base class for this mod
+│   │   ├── ConfigurationManagerAttributes.cs # Config Manager integration
+│   │   └── MinimumWage.csproj          # Project file
+│   └── 📁 BackToWork/                  # Restocker efficiency mod
+│       ├── BackToWorkPlugin.cs         # Main plugin entry point
+│       ├── RestockerPatch.cs           # Harmony patches for restocker productivity
+│       ├── BackToWorkConfig.cs         # Configuration management
 │       ├── ModBase.cs                  # Base class for this mod
 │       ├── ConfigurationManagerAttributes.cs # Config Manager integration
-│       └── MinimumWage.csproj          # Project file
+│       └── BackToWork.csproj           # Project file
 ├── 📁 libs/                            # Game & BepInEx dependencies
 ├── 📁 build-output/                    # Compiled mod DLLs
-├── 🔧 build.sh                         # Build script
+├── 🔧 build.sh                         # Build script (builds all mods)
 ├── 📄 superm.sln                       # Visual Studio solution
 └── 📖 README.md                        # This file
 ```
@@ -144,10 +162,6 @@ Create `mods/YourModName/YourModName.csproj`:
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="../../shared/SupermarketSimulatorShared.csproj" />
-  </ItemGroup>
 
   <ItemGroup>
     <Reference Include="BepInEx">
@@ -179,11 +193,11 @@ Create `mods/YourModName/YourModNamePlugin.cs`:
 ```csharp
 using BepInEx;
 using BepInEx.Logging;
-using SupermarketSimulatorMods.Shared;
 
 namespace SupermarketSimulatorMods.YourModName
 {
     [BepInPlugin("com.supermarketsim.yourmodname", "Your Mod Name", "1.0.0")]
+    [BepInProcess("Supermarket Simulator.exe")]
     public class YourModNamePlugin : ModBase
     {
         internal static new ManualLogSource Logger;
@@ -200,6 +214,7 @@ namespace SupermarketSimulatorMods.YourModName
         protected override void InitializeConfig()
         {
             // Initialize your mod's configuration here
+            // Example: YourModConfig.Initialize(Config);
         }
     }
 }
@@ -262,9 +277,10 @@ public class YourPatch
 - **Test incrementally** - start with simple patches
 
 ### **Best Practices**
-- **Follow naming conventions** from existing mods
-- **Use the shared ModBase class** for consistency
+- **Follow naming conventions** from existing mods (MinimumWage, BackToWork)
+- **Copy ModBase.cs** from existing mods for consistency  
 - **Make unique plugin GUIDs** to avoid conflicts
+- **Include ConfigurationManagerAttributes.cs** for better UI
 - **Document your configuration options**
 - **Test with different game scenarios**
 
